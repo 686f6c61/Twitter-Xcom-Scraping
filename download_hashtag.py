@@ -2,10 +2,16 @@
 """
 Script para descargar toda la conversación en torno a un hashtag usando Twitter API
 
-Versión: 0.4
+Versión: 0.5
 Autor: @hex686f6c61
 GitHub: https://github.com/686f6c61/Twitter-Xcom-Scraping
 Twitter/X: https://x.com/hex686f6c61
+
+Changelog v0.5:
+- Control de interrupciones con Ctrl+C
+- Pregunta si detener definitivamente o continuar
+- Guarda progreso al interrumpir
+- Permite reanudar descargas interrumpidas
 
 Changelog v0.4:
 - Reanudación automática de descargas interrumpidas
@@ -36,12 +42,35 @@ load_dotenv()
 
 # Variable global para control de interrupción
 interrupted = False
+should_stop = False
 
 def signal_handler(sig, frame):
     """Manejador para Ctrl+C"""
-    global interrupted
-    print("\n\nInterrupción detectada. Finalizando monitoreo...")
+    global interrupted, should_stop
+
+    if interrupted:
+        # Segunda vez que presionan Ctrl+C, detener inmediatamente
+        print("\n\n⚠️  Deteniendo forzosamente...")
+        should_stop = True
+        return
+
     interrupted = True
+    print("\n\n⚠️  Interrupción detectada (Ctrl+C)")
+    print("=" * 60)
+
+    try:
+        response = input("¿Detener definitivamente la descarga? (s/n): ").strip().lower()
+
+        if response == 's':
+            print("\n✓ Descarga detenida. El progreso se ha guardado.")
+            should_stop = True
+        else:
+            print("\n✓ Continuando con la descarga...")
+            interrupted = False
+    except:
+        # Si falla el input (ej: EOF), detener
+        print("\n✓ Descarga detenida. El progreso se ha guardado.")
+        should_stop = True
 
 def find_incomplete_downloads():
     """
@@ -159,6 +188,12 @@ class TwitterHashtagScraper:
         print("-" * 50)
 
         while True:
+            # Verificar si se debe detener
+            global should_stop
+            if should_stop:
+                print("\n⚠️  Descarga interrumpida por el usuario")
+                break
+
             # Preparar parámetros
             params = {
                 'query': search_query,
@@ -300,6 +335,11 @@ class TwitterHashtagScraper:
         cursor = None
 
         while True:
+            # Verificar si se debe detener
+            global should_stop
+            if should_stop:
+                break
+
             try:
                 params = {}
                 if cursor:
@@ -350,6 +390,8 @@ class TwitterHashtagScraper:
         Returns:
             Diccionario con tweets y respuestas
         """
+        global should_stop
+
         # Preparar nombre de archivo para guardado incremental
         query_clean = query.replace('#', '').replace(' ', '_')
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -374,6 +416,13 @@ class TwitterHashtagScraper:
             print("=" * 50)
 
             for i, tweet in enumerate(main_tweets, 1):
+                # Verificar si se debe detener
+                if should_stop:
+                    print("\n⚠️  Descarga de respuestas interrumpida")
+                    # Marcar como incompleto
+                    conversation['status'] = 'in_progress'
+                    break
+
                 tweet_data = {
                     'tweet': tweet,
                     'replies': []
@@ -408,8 +457,13 @@ class TwitterHashtagScraper:
         # Calcular estadísticas finales
         total_replies = sum(len(t['replies']) for t in conversation['tweets'])
         conversation['total_replies'] = total_replies
-        conversation['total_items'] = len(main_tweets) + total_replies
-        conversation['status'] = 'completed'
+        conversation['total_items'] = len(conversation['tweets']) + total_replies
+
+        # Solo marcar como completed si no fue interrumpido
+        if not should_stop and 'status' not in conversation:
+            conversation['status'] = 'completed'
+        elif 'status' not in conversation:
+            conversation['status'] = 'in_progress'
 
         # Guardado final (siempre, incluso si incremental_save está activo)
         if incremental_save:
@@ -419,7 +473,12 @@ class TwitterHashtagScraper:
             filepath = os.path.join(scraping_dir, partial_filename)
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(conversation, f, ensure_ascii=False, indent=2)
-            print(f"\n✓ Guardado final completado: {filepath}")
+
+            if should_stop:
+                print(f"\n💾 Progreso guardado en: {filepath}")
+                print("   Puedes reanudar esta descarga más tarde")
+            else:
+                print(f"\n✓ Guardado final completado: {filepath}")
 
         return conversation
 
@@ -556,6 +615,9 @@ class TwitterHashtagScraper:
 
 def main():
     """Función principal"""
+    # Registrar manejador de señales para Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+
     scraper = TwitterHashtagScraper()
 
     # Detectar descargas incompletas
@@ -970,6 +1032,12 @@ def main():
             print(f"✓ Duplicados omitidos: {duplicates}")
             print(f"✓ Total combinado: {conversation['total_main_tweets']} tweets")
 
+        # Verificar si fue interrumpido antes de continuar
+        global should_stop
+        if should_stop:
+            print("\n⚠️  Descarga interrumpida por el usuario")
+            return
+
         # Aplicar filtros si están configurados
         if min_likes or verified_only:
             conversation = scraper.apply_filters(conversation, min_likes, verified_only)
@@ -986,20 +1054,21 @@ def main():
             filename = scraper.save_to_json(conversation)
 
         # Exportar a CSV si está activado
-        if export_csv:
+        if export_csv and not should_stop:
             scraper.export_to_csv(conversation)
 
-        # Mostrar resumen
-        print("\n" + "=" * 50)
-        print("RESUMEN")
-        print("=" * 50)
-        print(f"Búsqueda: {conversation['query']}")
-        print(f"Tipo: {conversation['search_type']}")
-        print(f"Tweets principales: {conversation['total_main_tweets']}")
-        print(f"Total de respuestas: {conversation['total_replies']}")
-        print(f"Total de elementos: {conversation['total_items']}")
-        print(f"Archivo JSON: {filename}")
-        print("=" * 50)
+        # Mostrar resumen solo si no fue interrumpido
+        if not should_stop:
+            print("\n" + "=" * 50)
+            print("RESUMEN")
+            print("=" * 50)
+            print(f"Búsqueda: {conversation['query']}")
+            print(f"Tipo: {conversation['search_type']}")
+            print(f"Tweets principales: {conversation['total_main_tweets']}")
+            print(f"Total de respuestas: {conversation['total_replies']}")
+            print(f"Total de elementos: {conversation['total_items']}")
+            print(f"Archivo JSON: {filename}")
+            print("=" * 50)
 
 
 if __name__ == '__main__':
