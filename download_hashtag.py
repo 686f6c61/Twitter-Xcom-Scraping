@@ -2,16 +2,21 @@
 """
 Script para descargar toda la conversación en torno a un hashtag usando Twitter API
 
-Versión: 0.3
+Versión: 0.4
 Autor: @hex686f6c61
 GitHub: https://github.com/686f6c61/Twitter-Xcom-Scraping
 Twitter/X: https://x.com/hex686f6c61
+
+Changelog v0.4:
+- Reanudación automática de descargas interrumpidas
+- Detecta archivos con status "in_progress"
+- Continúa desde la fecha más antigua descargada
+- Evita duplicados por ID de tweet
 
 Changelog v0.3:
 - Guardado incremental automático durante la descarga
 - Guardado después de cada página de tweets
 - Guardado cada 5 tweets con respuestas procesados
-- Protección contra pérdida de datos por interrupciones
 
 Changelog v0.2:
 - Añadido filtro de rango de fechas (desde-hasta)
@@ -37,6 +42,53 @@ def signal_handler(sig, frame):
     global interrupted
     print("\n\nInterrupción detectada. Finalizando monitoreo...")
     interrupted = True
+
+def find_incomplete_downloads():
+    """
+    Busca archivos JSON con status 'in_progress' en la carpeta scraping/
+
+    Returns:
+        Lista de diccionarios con info de archivos incompletos
+    """
+    incomplete = []
+    scraping_dir = 'scraping'
+
+    if not os.path.exists(scraping_dir):
+        return incomplete
+
+    for filename in os.listdir(scraping_dir):
+        if filename.endswith('.json'):
+            filepath = os.path.join(scraping_dir, filename)
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+
+                if data.get('status') == 'in_progress':
+                    # Extraer fecha del tweet más antiguo
+                    oldest_date = None
+                    if data.get('tweets'):
+                        for item in data['tweets']:
+                            tweet = item.get('tweet', {})
+                            tweet_date = tweet.get('time_parsed', '')
+                            if tweet_date:
+                                if not oldest_date or tweet_date < oldest_date:
+                                    oldest_date = tweet_date
+
+                    incomplete.append({
+                        'filename': filename,
+                        'filepath': filepath,
+                        'query': data.get('query', 'Unknown'),
+                        'mode': data.get('mode', 'latest'),
+                        'total_tweets': data.get('total_main_tweets', 0),
+                        'downloaded_at': data.get('downloaded_at', ''),
+                        'oldest_date': oldest_date,
+                        'search_type': data.get('search_type', 'hashtag'),
+                        'data': data
+                    })
+            except Exception as e:
+                continue
+
+    return incomplete
 
 class TwitterHashtagScraper:
     def __init__(self):
@@ -506,98 +558,163 @@ def main():
     """Función principal"""
     scraper = TwitterHashtagScraper()
 
+    # Detectar descargas incompletas
+    incomplete_downloads = find_incomplete_downloads()
+
+    resume_data = None
+    if incomplete_downloads:
+        print("\n" + "=" * 70)
+        print("⚠️  DESCARGAS INCOMPLETAS DETECTADAS")
+        print("=" * 70)
+        print(f"Se encontraron {len(incomplete_downloads)} descarga(s) interrumpida(s):\n")
+
+        for idx, item in enumerate(incomplete_downloads, 1):
+            oldest_str = item['oldest_date'][:10] if item['oldest_date'] else 'N/A'
+            print(f"{idx}. {item['query']} ({item['search_type']}) - Modo: {item['mode']}")
+            print(f"   Tweets descargados: {item['total_tweets']}")
+            print(f"   Fecha más antigua: {oldest_str}")
+            print(f"   Archivo: {item['filename']}")
+            print()
+
+        resume_choice = input("¿Reanudar alguna descarga? (1-{}, n=nueva búsqueda): ".format(len(incomplete_downloads))).strip().lower()
+
+        if resume_choice.isdigit() and 1 <= int(resume_choice) <= len(incomplete_downloads):
+            resume_data = incomplete_downloads[int(resume_choice) - 1]
+            print(f"\n✓ Reanudando descarga de: {resume_data['query']}")
+        else:
+            print("\n✓ Iniciando nueva búsqueda")
+
     # Configuración
-    print("\n" + "=" * 70)
-    print("TÉRMINOS DE BÚSQUEDA")
-    print("=" * 70)
-    print("Puedes buscar uno o varios términos:")
-    print("- Un término: Python")
-    print("- Varios términos separados por comas: Python, JavaScript, AI")
-    print()
+    if not resume_data:
+        print("\n" + "=" * 70)
+        print("TÉRMINOS DE BÚSQUEDA")
+        print("=" * 70)
+        print("Puedes buscar uno o varios términos:")
+        print("- Un término: Python")
+        print("- Varios términos separados por comas: Python, JavaScript, AI")
+        print()
 
-    query_input = input("Ingresa el/los término(s) a buscar: ").strip()
+        query_input = input("Ingresa el/los término(s) a buscar: ").strip()
 
-    # Separar múltiples términos por comas
-    queries = [q.strip() for q in query_input.split(',') if q.strip()]
+    # Si estamos reanudando, usar datos del archivo
+    if resume_data:
+        query = resume_data['query']
+        queries = [query]
+        is_hashtag = resume_data['search_type'] == 'hashtag'
+        mode = resume_data['mode']
 
-    if len(queries) == 0:
-        print("❌ Error: Debes ingresar al menos un término de búsqueda")
-        return
+        # Extraer IDs ya descargados para evitar duplicados
+        existing_tweet_ids = set()
+        for item in resume_data['data'].get('tweets', []):
+            tweet_id = item.get('tweet', {}).get('id')
+            if tweet_id:
+                existing_tweet_ids.add(tweet_id)
 
-    if len(queries) > 1:
-        print(f"\n✓ Se buscarán {len(queries)} términos: {', '.join(queries)}")
+        # Configurar fecha desde (la más antigua descargada)
+        since_date = None
+        if resume_data['oldest_date']:
+            # Convertir de ISO a YYYY-MM-DD
+            try:
+                dt_obj = datetime.fromisoformat(resume_data['oldest_date'])
+                since_date = dt_obj.strftime('%Y-%m-%d')
+            except:
+                pass
+
+        max_tweets = None  # Continuar sin límite
+        until_date = None
+        include_replies = True  # Asumir que queremos respuestas
+
+        print(f"\n📌 Configuración de reanudación:")
+        print(f"   Query: {query}")
+        print(f"   Modo: {mode}")
+        print(f"   Tweets ya descargados: {len(existing_tweet_ids)}")
+        if since_date:
+            print(f"   Continuará desde: {since_date}")
+
     else:
-        query = queries[0]
+        # Separar múltiples términos por comas
+        queries = [q.strip() for q in query_input.split(',') if q.strip()]
 
-    print("\n" + "=" * 70)
-    print("TIPO DE BÚSQUEDA")
-    print("=" * 70)
-    print("1. Hashtag - Agrega # automáticamente (ej: Python → #Python)")
-    print("2. Texto libre - Busca nombre, frase o palabra (ej: Elon Musk)")
+        if len(queries) == 0:
+            print("❌ Error: Debes ingresar al menos un término de búsqueda")
+            return
 
-    search_type = input("\nSelecciona el tipo (1-2, default=1): ").strip()
-    is_hashtag = search_type != '2'
+        if len(queries) > 1:
+            print(f"\n✓ Se buscarán {len(queries)} términos: {', '.join(queries)}")
+        else:
+            query = queries[0]
 
-    print("\n" + "=" * 70)
-    print("MODO DE BÚSQUEDA")
-    print("=" * 70)
-    print("1. Latest (Más recientes)")
-    print("   → Tweets ordenados por fecha, del más nuevo al más antiguo")
-    print("   → Útil para ver las últimas publicaciones sobre un tema")
-    print()
-    print("2. Top (Más populares)")
-    print("   → Tweets con más likes, retweets y engagement")
-    print("   → Útil para ver el contenido más viral o relevante")
-    print()
-    print("3. Photos (Solo fotos)")
-    print("   → Solo tweets que contienen imágenes")
-    print("   → Útil para análisis visual o recopilación de imágenes")
-    print()
-    print("4. Videos (Solo videos)")
-    print("   → Solo tweets que contienen videos")
-    print("   → Útil para recopilar contenido multimedia")
+        print("\n" + "=" * 70)
+        print("TIPO DE BÚSQUEDA")
+        print("=" * 70)
+        print("1. Hashtag - Agrega # automáticamente (ej: Python → #Python)")
+        print("2. Texto libre - Busca nombre, frase o palabra (ej: Elon Musk)")
 
-    mode_choice = input("\nSelecciona el modo (1-4, default=1): ").strip()
-    mode_map = {'1': 'latest', '2': 'top', '3': 'photos', '4': 'videos'}
-    mode = mode_map.get(mode_choice, 'latest')
+        search_type = input("\nSelecciona el tipo (1-2, default=1): ").strip()
+        is_hashtag = search_type != '2'
 
-    print("\n" + "=" * 70)
-    max_tweets_input = input("¿Cuántos tweets descargar? (Enter = todos disponibles): ").strip()
-    max_tweets = int(max_tweets_input) if max_tweets_input else None
+        print("\n" + "=" * 70)
+        print("MODO DE BÚSQUEDA")
+        print("=" * 70)
+        print("1. Latest (Más recientes)")
+        print("   → Tweets ordenados por fecha, del más nuevo al más antiguo")
+        print("   → Útil para ver las últimas publicaciones sobre un tema")
+        print()
+        print("2. Top (Más populares)")
+        print("   → Tweets con más likes, retweets y engagement")
+        print("   → Útil para ver el contenido más viral o relevante")
+        print()
+        print("3. Photos (Solo fotos)")
+        print("   → Solo tweets que contienen imágenes")
+        print("   → Útil para análisis visual o recopilación de imágenes")
+        print()
+        print("4. Videos (Solo videos)")
+        print("   → Solo tweets que contienen videos")
+        print("   → Útil para recopilar contenido multimedia")
 
-    # Pregunta de rango de fechas
-    date_range_input = input("¿Filtrar por rango de fechas? (s/n, default=n): ").strip().lower()
+        mode_choice = input("\nSelecciona el modo (1-4, default=1): ").strip()
+        mode_map = {'1': 'latest', '2': 'top', '3': 'photos', '4': 'videos'}
+        mode = mode_map.get(mode_choice, 'latest')
 
-    until_date = None
-    since_date = None
+        print("\n" + "=" * 70)
+        max_tweets_input = input("¿Cuántos tweets descargar? (Enter = todos disponibles): ").strip()
+        max_tweets = int(max_tweets_input) if max_tweets_input else None
 
-    if date_range_input == 's':
-        print("\n   Configura el rango de fechas (formato DD-MM-YYYY)")
-        print("   Puedes especificar solo una fecha o ambas:")
+        existing_tweet_ids = set()  # No hay IDs previos en nueva búsqueda
 
-        since_date_input = input("   - Desde (fecha más antigua): ").strip()
-        until_date_input = input("   - Hasta (fecha más reciente): ").strip()
+        # Pregunta de rango de fechas (solo en búsqueda nueva)
+        date_range_input = input("¿Filtrar por rango de fechas? (s/n, default=n): ").strip().lower()
 
-        # Convertir since_date de DD-MM-YYYY a YYYY-MM-DD
-        if since_date_input:
-            try:
-                day, month, year = since_date_input.split('-')
-                since_date = f"{year}-{month}-{day}"
-            except:
-                print("   ⚠️  Formato de fecha 'desde' incorrecto, se ignorará")
-                since_date = None
+        until_date = None
+        since_date = None
 
-        # Convertir until_date de DD-MM-YYYY a YYYY-MM-DD
-        if until_date_input:
-            try:
-                day, month, year = until_date_input.split('-')
-                until_date = f"{year}-{month}-{day}"
-            except:
-                print("   ⚠️  Formato de fecha 'hasta' incorrecto, se ignorará")
-                until_date = None
+        if date_range_input == 's':
+            print("\n   Configura el rango de fechas (formato DD-MM-YYYY)")
+            print("   Puedes especificar solo una fecha o ambas:")
 
-    include_replies_input = input("\n¿Incluir respuestas? (s/n, default=s): ").strip().lower()
-    include_replies = include_replies_input != 'n'
+            since_date_input = input("   - Desde (fecha más antigua): ").strip()
+            until_date_input = input("   - Hasta (fecha más reciente): ").strip()
+
+            # Convertir since_date de DD-MM-YYYY a YYYY-MM-DD
+            if since_date_input:
+                try:
+                    day, month, year = since_date_input.split('-')
+                    since_date = f"{year}-{month}-{day}"
+                except:
+                    print("   ⚠️  Formato de fecha 'desde' incorrecto, se ignorará")
+                    since_date = None
+
+            # Convertir until_date de DD-MM-YYYY a YYYY-MM-DD
+            if until_date_input:
+                try:
+                    day, month, year = until_date_input.split('-')
+                    until_date = f"{year}-{month}-{day}"
+                except:
+                    print("   ⚠️  Formato de fecha 'hasta' incorrecto, se ignorará")
+                    until_date = None
+
+        include_replies_input = input("\n¿Incluir respuestas? (s/n, default=s): ").strip().lower()
+        include_replies = include_replies_input != 'n'
 
     # Opciones avanzadas
     print("\n" + "=" * 70)
@@ -824,12 +941,49 @@ def main():
             since_date=since_date
         )
 
+        # Si estamos reanudando, merge con datos existentes
+        if resume_data:
+            print(f"\n🔄 Combinando tweets nuevos con {len(resume_data['data']['tweets'])} existentes...")
+
+            # Filtrar tweets duplicados
+            new_tweets = []
+            duplicates = 0
+            for item in conversation['tweets']:
+                tweet_id = item['tweet'].get('id')
+                if tweet_id not in existing_tweet_ids:
+                    new_tweets.append(item)
+                else:
+                    duplicates += 1
+
+            # Combinar: existentes + nuevos
+            all_tweets = resume_data['data']['tweets'] + new_tweets
+
+            conversation['tweets'] = all_tweets
+            conversation['total_main_tweets'] = len(all_tweets)
+            conversation['total_replies'] = sum(len(t['replies']) for t in all_tweets)
+            conversation['total_items'] = conversation['total_main_tweets'] + conversation['total_replies']
+
+            # Usar el mismo nombre de archivo
+            conversation['_saved_filename'] = resume_data['filename']
+
+            print(f"✓ Tweets nuevos: {len(new_tweets)}")
+            print(f"✓ Duplicados omitidos: {duplicates}")
+            print(f"✓ Total combinado: {conversation['total_main_tweets']} tweets")
+
         # Aplicar filtros si están configurados
         if min_likes or verified_only:
             conversation = scraper.apply_filters(conversation, min_likes, verified_only)
 
         # Guardar resultados
-        filename = scraper.save_to_json(conversation)
+        if resume_data:
+            # Guardar en el mismo archivo
+            filepath = resume_data['filepath']
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(conversation, f, ensure_ascii=False, indent=2)
+            filename = filepath
+            print(f"\n✓ Descarga reanudada guardada en: {filepath}")
+        else:
+            filename = scraper.save_to_json(conversation)
 
         # Exportar a CSV si está activado
         if export_csv:
