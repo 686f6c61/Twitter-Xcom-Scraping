@@ -1,6 +1,6 @@
 # Twitter/X Scraper - Extractor de Conversaciones
 
-**Versión:** 0.4
+**Versión:** 0.5
 **Autor:** [@hex686f6c61](https://x.com/hex686f6c61)
 **GitHub:** [686f6c61/Twitter-Xcom-Scraping](https://github.com/686f6c61/Twitter-Xcom-Scraping)
 
@@ -29,7 +29,12 @@ Este proyecto permite extraer y almacenar conversaciones completas de Twitter/X,
   - Después de cada página de tweets descargada
   - Cada 5 tweets procesados con sus respuestas
   - Protección contra pérdida de datos en caso de interrupción
-- **Reanudación automática** (NUEVO en v0.4):
+- **Control de interrupciones** (NUEVO en v0.5):
+  - Presiona Ctrl+C durante la descarga para pausar
+  - Pregunta si deseas detener definitivamente o continuar
+  - Guarda automáticamente el progreso al interrumpir
+  - Permite reanudar descargas interrumpidas más tarde
+- **Reanudación automática** (v0.4):
   - Detecta automáticamente descargas interrumpidas al iniciar
   - Muestra lista de descargas incompletas con estadísticas
   - Continúa desde la fecha más antigua descargada
@@ -425,6 +430,14 @@ El código incluye manejo básico de errores:
 - Algunos tweets pueden estar restringidos por región
 
 ## Changelog
+
+### v0.5 (05 de Octubre de 2025)
+- **Control de interrupciones con Ctrl+C**
+  - Presiona Ctrl+C durante la descarga para pausar
+  - Pregunta si deseas detener definitivamente o continuar
+  - Guarda automáticamente el progreso al interrumpir
+  - Permite reanudar descargas interrumpidas más tarde
+  - Segunda pulsación de Ctrl+C detiene forzosamente
 
 ### v0.4 (05 de Octubre de 2025)
 - **Reanudación automática de descargas**: Recupera descargas interrumpidas
