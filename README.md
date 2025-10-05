@@ -1,6 +1,6 @@
 # Twitter/X Scraper - Extractor de Conversaciones
 
-**Versión:** 0.2
+**Versión:** 0.3
 **Autor:** [@hex686f6c61](https://x.com/hex686f6c61)
 **GitHub:** [686f6c61/Twitter-Xcom-Scraping](https://github.com/686f6c61/Twitter-Xcom-Scraping)
 
@@ -24,6 +24,11 @@ Este proyecto permite extraer y almacenar conversaciones completas de Twitter/X,
   - Buscar tweets en un rango específico (ej: del 01-10-2024 al 15-10-2024)
   - Opción de especificar solo fecha inicial, solo fecha final, o ambas
   - Formato: DD-MM-YYYY
+- **Guardado incremental** (NUEVO en v0.3):
+  - Guarda progresivamente durante la descarga
+  - Después de cada página de tweets descargada
+  - Cada 5 tweets procesados con sus respuestas
+  - Protección contra pérdida de datos en caso de interrupción
 - **Búsqueda múltiple**: Permite buscar varios términos en una sola ejecución separándolos por comas
 - **Respuestas incluidas**: Opción de extraer todas las respuestas de cada tweet
 - **Almacenamiento organizado**: Todos los archivos JSON se guardan en la carpeta `scraping/`
@@ -415,6 +420,14 @@ El código incluye manejo básico de errores:
 - Algunos tweets pueden estar restringidos por región
 
 ## Changelog
+
+### v0.3 (05 de Octubre de 2025)
+- **Guardado incremental**: Guarda progreso durante la descarga
+  - Guardado automático después de cada página de tweets
+  - Guardado cada 5 tweets procesados con respuestas
+  - Protección contra pérdida de datos por interrupciones
+  - Evita duplicación de archivos JSON
+- Fix: Validación de input numérico en filtro de likes
 
 ### v0.2 (05 de Octubre de 2025)
 - Añadido filtro por rango de fechas (desde-hasta)
