@@ -104,19 +104,26 @@ python3 download_hashtag.py
 
 El script te guiará interactivamente a través de las siguientes opciones:
 
+![Consola - Inicio](img/consola_01.png)
+
 1. **Término a buscar**: Ingresa el hashtag o texto (ej: "Python", "Elon Musk")
 2. **Tipo de búsqueda**:
    - Hashtag (agrega # automáticamente)
    - Texto libre
 3. **Modo de búsqueda**: Latest, Top, Photos o Videos
 4. **Cantidad de tweets**: Número específico o Enter para todos
-5. **Fecha límite** (opcional): DD-MM-YYYY
+5. **Rango de fechas** (opcional): Desde DD-MM-YYYY hasta DD-MM-YYYY
 6. **Incluir respuestas**: s/n
+
+![Consola - Proceso](img/consola_02.png)
+
 7. **Opciones avanzadas** (opcional):
    - Exportar a CSV
    - Filtro por likes mínimos
    - Solo usuarios verificados
    - Modo monitoreo continuo con duración e intervalo configurables
+
+![Consola - Resultado](img/consola_03.png)
 
 ### Ejemplos de uso
 
@@ -375,14 +382,15 @@ Para pruebas durante desarrollo, usar límite de 10 tweets para minimizar uso de
 max_tweets = 10  # Limitar para testing
 ```
 
-### Ejemplos de Archivos JSON Generados
+### Ejemplos de Archivos Generados
 
 El proyecto incluye archivos de ejemplo en la carpeta `scraping/`:
 
-- **scraping/Python_20251005_135939.json**: Búsqueda de hashtag #Python (5 tweets, modo latest)
-- **scraping/tecnología_20251005_135931.json**: Búsqueda de texto "tecnología" (5 tweets, modo top)
+**Búsqueda: Neuralink (hashtag, modo top, 25 tweets)**
+- `scraping/Neuralink_20251005_144420.json` - Datos completos en formato JSON
+- `scraping/Neuralink_20251005_144420.csv` - Exportación tabular para análisis
 
-Estos archivos sirven como referencia para entender la estructura de datos generada.
+Estos archivos sirven como referencia para entender la estructura de datos generada y los formatos de exportación disponibles.
 
 ### Manejo de Errores
 
