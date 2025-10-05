@@ -177,9 +177,8 @@ Xcom/
 ├── .env                     # Credenciales API (no incluir en git)
 ├── README.md               # Este archivo
 └── scraping/               # Carpeta con resultados JSON (creada automáticamente)
-    ├── Python_20251005_135939.json
-    ├── tecnología_20251005_135931.json
-    ├── Guillermo_Fernández_Vara_20251005_135345.json
+    ├── Chistorras_20251005_212827.json
+    ├── Chistorras_20251005_212858.csv
     └── ...
 ```
 
