@@ -1,0 +1,42 @@
+{
+  "tweet_url": "https://twitter.com/example_user/status/1234567890",
+  "scrape_date": "2024-01-15T14:30:00.123456",
+  "main_tweet": {
+    "text": "Este es un tweet de ejemplo sobre un tema interesante. #ejemplo #twitter",
+    "username": "Example User\n@example_user",
+    "timestamp": "2024-01-15T10:00:00.000Z",
+    "reply_count": "15",
+    "retweet_count": "8",
+    "like_count": "42",
+    "extracted_at": "2024-01-15T14:30:00.123456"
+  },
+  "replies": [
+    {
+      "text": "¡Muy interesante! Gracias por compartir esta información.",
+      "username": "Responder One\n@responder1",
+      "timestamp": "2024-01-15T10:15:00.000Z",
+      "reply_count": "2",
+      "retweet_count": "0",
+      "like_count": "5",
+      "extracted_at": "2024-01-15T14:30:00.123456"
+    },
+    {
+      "text": "¿Podrías elaborar más sobre este punto?",
+      "username": "Curious User\n@curious_user",
+      "timestamp": "2024-01-15T10:20:00.000Z",
+      "reply_count": "1",
+      "retweet_count": "0",
+      "like_count": "3",
+      "extracted_at": "2024-01-15T14:30:00.123456"
+    },
+    {
+      "text": "Totalmente de acuerdo con tu perspectiva. Esto es clave para entender el tema.",
+      "username": "Agree Bot\n@agreebot",
+      "timestamp": "2024-01-15T11:00:00.000Z",
+      "reply_count": "0",
+      "retweet_count": "1",
+      "like_count": "7",
+      "extracted_at": "2024-01-15T14:30:00.123456"
+    }
+  ]
+}
