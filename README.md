@@ -1,5 +1,9 @@
 # Twitter/X Scraper - Extractor de Conversaciones
 
+**Versión:** 0.2
+**Autor:** [@hex686f6c61](https://x.com/hex686f6c61)
+**GitHub:** [686f6c61/Twitter-Xcom-Scraping](https://github.com/686f6c61/Twitter-Xcom-Scraping)
+
 Script de Python para extraer conversaciones completas de Twitter/X en torno a hashtags, términos de búsqueda o nombres específicos usando la API de RapidAPI.
 
 ## Descripción
@@ -16,7 +20,11 @@ Este proyecto permite extraer y almacenar conversaciones completas de Twitter/X,
   - **Videos**: Solo tweets que contienen videos
 - **Paginación automática**: Extrae todos los tweets disponibles retrocediendo en el tiempo
 - **Límite de tweets**: Configurable o ilimitado (todos los disponibles)
-- **Filtro por fecha**: Opción de buscar hasta una fecha específica (DD-MM-YYYY)
+- **Filtro por rango de fechas** (NUEVO en v0.2):
+  - Buscar tweets en un rango específico (ej: del 01-10-2024 al 15-10-2024)
+  - Opción de especificar solo fecha inicial, solo fecha final, o ambas
+  - Formato: DD-MM-YYYY
+- **Búsqueda múltiple**: Permite buscar varios términos en una sola ejecución separándolos por comas
 - **Respuestas incluidas**: Opción de extraer todas las respuestas de cada tweet
 - **Almacenamiento organizado**: Todos los archivos JSON se guardan en la carpeta `scraping/`
 - **Información detallada**: Incluye likes, retweets, fechas, usuarios, multimedia, etc.
@@ -398,9 +406,20 @@ El código incluye manejo básico de errores:
 - Cuentas privadas no son accesibles
 - Algunos tweets pueden estar restringidos por región
 
-## Fecha de Última Actualización
+## Changelog
 
-**05 de Octubre de 2025**
+### v0.2 (05 de Octubre de 2025)
+- Añadido filtro por rango de fechas (desde-hasta)
+- Mejoras en la interfaz de selección de fechas
+- Optimización del filtrado de tweets por timestamp
+
+### v0.1 (05 de Octubre de 2025)
+- Versión inicial
+- Búsqueda por hashtag y texto libre
+- Múltiples modos de búsqueda (Latest, Top, Photos, Videos)
+- Exportación a JSON y CSV
+- Modo monitoreo continuo
+- Tests de integración con API real
 
 ## Licencia
 
