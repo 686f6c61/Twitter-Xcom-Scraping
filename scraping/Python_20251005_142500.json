@@ -1,0 +1,156 @@
+{
+  "query": "Python",
+  "search_type": "hashtag",
+  "mode": "latest",
+  "downloaded_at": "2025-10-05T14:25:00.968460",
+  "total_main_tweets": 3,
+  "tweets": [
+    {
+      "tweet": {
+        "conversation_id": "1974812043657035805",
+        "gifs": null,
+        "hashtags": [
+          "python",
+          "pythondashboard",
+          "kospi"
+        ],
+        "html": "Oct 3, list of SKorea stocks at a 3yr normalized price of 1.2 or ABOVE. Great 5yr CAGR. EDUCATIONAL PURPOSES ONLY  <br><a href=\"https://twitter.com/hashtag/python\">#python</a> <a href=\"https://twitter.com/hashtag/pythondashboard\">#pythondashboard</a> <a href=\"https://twitter.com/hashtag/kospi\">#kospi</a> <br><a href=\"https://t.co/LL9uUBPZ6f\"><img src=\"https://pbs.twimg.com/media/G2fxBHxXAAAkA0H.png\"/></a>",
+        "id": "1974812043657035805",
+        "in_reply_to_status": null,
+        "in_reply_to_status_id": "",
+        "is_quoted": false,
+        "is_pin": false,
+        "is_reply": false,
+        "is_retweet": false,
+        "is_self_thread": false,
+        "likes": 0,
+        "name": "rajesh manjrekar",
+        "mentions": null,
+        "permanent_url": "https://twitter.com/prof_fin_india/status/1974812043657035805",
+        "photos": [
+          {
+            "id": "1974811963193491456",
+            "url": "https://pbs.twimg.com/media/G2fxBHxXAAAkA0H.png"
+          }
+        ],
+        "place": null,
+        "quoted_status": null,
+        "quoted_status_id": "",
+        "replies": 0,
+        "retweets": 0,
+        "retweeted_status": null,
+        "retweeted_status_id": "",
+        "text": "Oct 3, list of SKorea stocks at a 3yr normalized price of 1.2 or ABOVE. Great 5yr CAGR. EDUCATIONAL PURPOSES ONLY  \n#python #pythondashboard #kospi https://pbs.twimg.com/media/G2fxBHxXAAAkA0H.png",
+        "thread": null,
+        "time_parsed": "2025-10-05T12:20:56Z",
+        "timestamp": 1759666856,
+        "urls": null,
+        "user_id": "1517707670093918210",
+        "username": "prof_fin_india",
+        "videos": null,
+        "views": 6,
+        "sensitive_content": false
+      },
+      "replies": []
+    },
+    {
+      "tweet": {
+        "conversation_id": "1974811672595345546",
+        "gifs": null,
+        "hashtags": [
+          "algo",
+          "algotrading",
+          "python",
+          "pythonprogramming",
+          "hedgefunds",
+          "stockscreener",
+          "hft",
+          "nyse",
+          "Nasdaq"
+        ],
+        "html": "I just published The Liquidity-First Stock Screener: Filtering for Swing Trading Alpha Using Market Cap, ADX, and… <a href=\"https://medium.com/algorithmic-and-quantitative-trading/the-liquidity-first-stock-screener-filtering-for-swing-trading-alpha-using-market-cap-adx-and-09f4ccb72694?source=social.tw\">https://medium.com/algorithmic-and-quantitative-trading/the-liquidity-first-stock-screener-filtering-for-swing-trading-alpha-using-market-cap-adx-and-09f4ccb72694?source=social.tw</a> <a href=\"https://twitter.com/hashtag/algo\">#algo</a> <a href=\"https://twitter.com/hashtag/algotrading\">#algotrading</a> <a href=\"https://twitter.com/hashtag/python\">#python</a> <a href=\"https://twitter.com/hashtag/pythonprogramming\">#pythonprogramming</a> <a href=\"https://twitter.com/hashtag/hedgefunds\">#hedgefunds</a> <a href=\"https://twitter.com/hashtag/stockscreener\">#stockscreener</a> <a href=\"https://twitter.com/hashtag/hft\">#hft</a> <a href=\"https://twitter.com/hashtag/nyse\">#nyse</a> <a href=\"https://twitter.com/hashtag/Nasdaq\">#Nasdaq</a>",
+        "id": "1974811672595345546",
+        "in_reply_to_status": null,
+        "in_reply_to_status_id": "",
+        "is_quoted": false,
+        "is_pin": false,
+        "is_reply": false,
+        "is_retweet": false,
+        "is_self_thread": false,
+        "likes": 0,
+        "name": "bhaskar das",
+        "mentions": null,
+        "permanent_url": "https://twitter.com/bhaskarndas/status/1974811672595345546",
+        "photos": null,
+        "place": null,
+        "quoted_status": null,
+        "quoted_status_id": "",
+        "replies": 0,
+        "retweets": 0,
+        "retweeted_status": null,
+        "retweeted_status_id": "",
+        "text": "I just published The Liquidity-First Stock Screener: Filtering for Swing Trading Alpha Using Market Cap, ADX, and… https://medium.com/algorithmic-and-quantitative-trading/the-liquidity-first-stock-screener-filtering-for-swing-trading-alpha-using-market-cap-adx-and-09f4ccb72694?source=social.tw #algo #algotrading #python #pythonprogramming #hedgefunds #stockscreener #hft #nyse #Nasdaq",
+        "thread": null,
+        "time_parsed": "2025-10-05T12:19:27Z",
+        "timestamp": 1759666767,
+        "urls": [
+          "https://medium.com/algorithmic-and-quantitative-trading/the-liquidity-first-stock-screener-filtering-for-swing-trading-alpha-using-market-cap-adx-and-09f4ccb72694?source=social.tw"
+        ],
+        "user_id": "68461702",
+        "username": "bhaskarndas",
+        "videos": null,
+        "views": 3,
+        "sensitive_content": false
+      },
+      "replies": []
+    },
+    {
+      "tweet": {
+        "conversation_id": "1974810243293990999",
+        "gifs": null,
+        "hashtags": [
+          "Python",
+          "Python39",
+          "EndOfLife",
+          "DevTips"
+        ],
+        "html": "🚨 Python 3.9 EOL! 🚨 Upgrade for security. No more fixes.<br><br>Move to 3.10+ for modern features: match/case, X | Y type unions, &amp; zip(strict=True).<br><br>Refactoring guide (ruff &amp; AI prompt) on our blog - <a href=\"https://www.heurekadevs.com/python-39-end-of-life\">https://www.heurekadevs.com/python-39-end-of-life</a><br><br><a href=\"https://twitter.com/hashtag/Python\">#Python</a> <a href=\"https://twitter.com/hashtag/Python39\">#Python39</a> <a href=\"https://twitter.com/hashtag/EndOfLife\">#EndOfLife</a> <a href=\"https://twitter.com/hashtag/DevTips\">#DevTips</a>",
+        "id": "1974810243293990999",
+        "in_reply_to_status": null,
+        "in_reply_to_status_id": "",
+        "is_quoted": false,
+        "is_pin": false,
+        "is_reply": false,
+        "is_retweet": false,
+        "is_self_thread": false,
+        "likes": 0,
+        "name": "HeurekaDevs",
+        "mentions": null,
+        "permanent_url": "https://twitter.com/HeurekaDevs/status/1974810243293990999",
+        "photos": null,
+        "place": null,
+        "quoted_status": null,
+        "quoted_status_id": "",
+        "replies": 0,
+        "retweets": 0,
+        "retweeted_status": null,
+        "retweeted_status_id": "",
+        "text": "🚨 Python 3.9 EOL! 🚨 Upgrade for security. No more fixes.\n\nMove to 3.10+ for modern features: match/case, X | Y type unions, &amp; zip(strict=True).\n\nRefactoring guide (ruff &amp; AI prompt) on our blog - https://www.heurekadevs.com/python-39-end-of-life\n\n#Python #Python39 #EndOfLife #DevTips",
+        "thread": null,
+        "time_parsed": "2025-10-05T12:13:46Z",
+        "timestamp": 1759666426,
+        "urls": [
+          "https://www.heurekadevs.com/python-39-end-of-life"
+        ],
+        "user_id": "2414058740",
+        "username": "HeurekaDevs",
+        "videos": null,
+        "views": 16,
+        "sensitive_content": false
+      },
+      "replies": []
+    }
+  ],
+  "total_replies": 0,
+  "total_items": 3
+}
