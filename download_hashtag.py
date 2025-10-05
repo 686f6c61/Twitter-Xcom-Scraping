@@ -2,10 +2,16 @@
 """
 Script para descargar toda la conversación en torno a un hashtag usando Twitter API
 
-Versión: 0.2
+Versión: 0.3
 Autor: @hex686f6c61
 GitHub: https://github.com/686f6c61/Twitter-Xcom-Scraping
 Twitter/X: https://x.com/hex686f6c61
+
+Changelog v0.3:
+- Guardado incremental automático durante la descarga
+- Guardado después de cada página de tweets
+- Guardado cada 5 tweets con respuestas procesados
+- Protección contra pérdida de datos por interrupciones
 
 Changelog v0.2:
 - Añadido filtro de rango de fechas (desde-hasta)
@@ -50,7 +56,7 @@ class TwitterHashtagScraper:
         print(f"API Key: {self.api_key[:10]}...{self.api_key[-4:]}")
         print()
 
-    def search_tweets(self, query, mode='latest', max_tweets=None, is_hashtag=True, until_date=None, since_date=None):
+    def search_tweets(self, query, mode='latest', max_tweets=None, is_hashtag=True, until_date=None, since_date=None, incremental_save=False, partial_filename=None):
         """
         Busca tweets por hashtag o texto
 
@@ -61,6 +67,8 @@ class TwitterHashtagScraper:
             is_hashtag: Si True, agrega # si no lo tiene. Si False, busca como texto
             until_date: Fecha límite superior (más reciente) - formato: YYYY-MM-DD
             since_date: Fecha límite inferior (más antigua) - formato: YYYY-MM-DD
+            incremental_save: Si True, guarda después de cada página
+            partial_filename: Nombre del archivo para guardado incremental
 
         Returns:
             Lista de tweets
@@ -173,6 +181,25 @@ class TwitterHashtagScraper:
 
                 print(f"Página {page_count}: {len(filtered_tweets)} tweets añadidos de {len(tweets)} | Total: {tweet_count} tweets | Más antiguo: {oldest_date[:10] if oldest_date else 'N/A'}")
 
+                # Guardado incremental después de cada página
+                if incremental_save and partial_filename and len(filtered_tweets) > 0:
+                    partial_data = {
+                        'query': query,
+                        'search_type': 'hashtag' if is_hashtag else 'text',
+                        'mode': mode,
+                        'downloaded_at': datetime.now().isoformat(),
+                        'status': 'in_progress',
+                        'total_main_tweets': tweet_count,
+                        'tweets': [{'tweet': t, 'replies': []} for t in all_tweets]
+                    }
+                    scraping_dir = 'scraping'
+                    if not os.path.exists(scraping_dir):
+                        os.makedirs(scraping_dir)
+                    filepath = os.path.join(scraping_dir, partial_filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(partial_data, f, ensure_ascii=False, indent=2)
+                    print(f"  💾 Guardado incremental: {tweet_count} tweets")
+
                 # Verificar si llegamos al máximo
                 if max_tweets and tweet_count >= max_tweets:
                     all_tweets = all_tweets[:max_tweets]
@@ -254,7 +281,7 @@ class TwitterHashtagScraper:
 
         return all_replies
 
-    def download_full_conversation(self, query, mode='latest', max_tweets=None, include_replies=True, is_hashtag=True, until_date=None, since_date=None):
+    def download_full_conversation(self, query, mode='latest', max_tweets=None, include_replies=True, is_hashtag=True, until_date=None, since_date=None, incremental_save=True):
         """
         Descarga la conversación completa incluyendo respuestas
 
@@ -266,12 +293,18 @@ class TwitterHashtagScraper:
             is_hashtag: Si True, trata como hashtag. Si False, como texto libre
             until_date: Fecha límite superior (más reciente) - formato: YYYY-MM-DD
             since_date: Fecha límite inferior (más antigua) - formato: YYYY-MM-DD
+            incremental_save: Si True, guarda progresivamente (por defecto True)
 
         Returns:
             Diccionario con tweets y respuestas
         """
-        # Buscar tweets principales
-        main_tweets = self.search_tweets(query, mode, max_tweets, is_hashtag, until_date, since_date)
+        # Preparar nombre de archivo para guardado incremental
+        query_clean = query.replace('#', '').replace(' ', '_')
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        partial_filename = f"{query_clean}_{timestamp}.json"
+
+        # Buscar tweets principales con guardado incremental
+        main_tweets = self.search_tweets(query, mode, max_tweets, is_hashtag, until_date, since_date, incremental_save, partial_filename)
 
         conversation = {
             'query': query,
@@ -303,13 +336,38 @@ class TwitterHashtagScraper:
                     print(f"  Respuestas encontradas: {len(replies)}")
 
                 conversation['tweets'].append(tweet_data)
+
+                # Guardado incremental después de cada tweet con respuestas
+                if incremental_save and (i % 5 == 0 or i == len(main_tweets)):  # Cada 5 tweets o al final
+                    conversation['total_replies'] = sum(len(t['replies']) for t in conversation['tweets'])
+                    conversation['total_items'] = conversation['total_main_tweets'] + conversation['total_replies']
+                    conversation['status'] = 'in_progress' if i < len(main_tweets) else 'completed'
+
+                    scraping_dir = 'scraping'
+                    if not os.path.exists(scraping_dir):
+                        os.makedirs(scraping_dir)
+                    filepath = os.path.join(scraping_dir, partial_filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(conversation, f, ensure_ascii=False, indent=2)
+                    print(f"  💾 Guardado incremental: {i}/{len(main_tweets)} tweets procesados")
         else:
             conversation['tweets'] = [{'tweet': tweet, 'replies': []} for tweet in main_tweets]
 
-        # Calcular estadísticas
+        # Calcular estadísticas finales
         total_replies = sum(len(t['replies']) for t in conversation['tweets'])
         conversation['total_replies'] = total_replies
         conversation['total_items'] = len(main_tweets) + total_replies
+        conversation['status'] = 'completed'
+
+        # Guardado final (siempre, incluso si incremental_save está activo)
+        if incremental_save:
+            conversation['incremental_saved'] = True
+            conversation['_saved_filename'] = partial_filename  # Marcar el nombre del archivo usado
+            scraping_dir = 'scraping'
+            filepath = os.path.join(scraping_dir, partial_filename)
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(conversation, f, ensure_ascii=False, indent=2)
+            print(f"\n✓ Guardado final completado: {filepath}")
 
         return conversation
 
@@ -321,6 +379,14 @@ class TwitterHashtagScraper:
             data: Datos a guardar
             filename: Nombre del archivo (opcional)
         """
+        # Si ya tiene status=completed y fue guardado incrementalmente, devolver el path existente
+        if data.get('status') == 'completed' and data.get('incremental_saved'):
+            saved_filename = data.get('_saved_filename')
+            if saved_filename:
+                filepath_existing = os.path.join('scraping', saved_filename)
+                if os.path.exists(filepath_existing):
+                    return filepath_existing
+
         # Crear carpeta scraping si no existe
         scraping_dir = 'scraping'
         if not os.path.exists(scraping_dir):
