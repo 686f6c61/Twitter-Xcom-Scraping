@@ -555,7 +555,9 @@ def main():
 
         # Filtro por likes
         min_likes_input = input("Filtrar tweets con mínimo de likes (Enter = sin filtro): ").strip()
-        min_likes = int(min_likes_input) if min_likes_input else None
+        min_likes = None
+        if min_likes_input and min_likes_input.isdigit():
+            min_likes = int(min_likes_input)
 
         # Filtro por verificados
         verified_input = input("¿Solo usuarios verificados? (s/n, default=n): ").strip().lower()
