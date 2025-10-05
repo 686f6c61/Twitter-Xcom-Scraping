@@ -366,6 +366,60 @@ class TestRealAPIIntegration(unittest.TestCase):
 
         print("✓ Flujo completo ejecutado correctamente")
 
+    def test_13_incremental_save_real(self):
+        """Test REAL: Guardado incremental - 1 búsqueda"""
+        print("\n[TEST] Probando guardado incremental...")
+
+        conversation = self.scraper.download_full_conversation(
+            query='test',
+            mode='latest',
+            max_tweets=10,
+            include_replies=False,
+            is_hashtag=True,
+            incremental_save=True
+        )
+
+        print(f"✓ Descarga con guardado incremental: {conversation['total_main_tweets']} tweets")
+
+        # Verificar que tiene marcas de guardado incremental
+        self.assertTrue(conversation.get('incremental_saved'))
+        self.assertIn('_saved_filename', conversation)
+        self.assertEqual(conversation.get('status'), 'completed')
+
+        print("✓ Guardado incremental verificado")
+
+    def test_14_date_range_filter_real(self):
+        """Test REAL: Filtro por rango de fechas - 1 búsqueda"""
+        print("\n[TEST] Probando filtro de rango de fechas...")
+
+        # Buscar tweets de los últimos 2 días
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        two_days_ago = today - timedelta(days=2)
+
+        since_date = two_days_ago.strftime('%Y-%m-%d')
+        until_date = today.strftime('%Y-%m-%d')
+
+        tweets = self.scraper.search_tweets(
+            query='Python',
+            mode='latest',
+            max_tweets=10,
+            is_hashtag=True,
+            since_date=since_date,
+            until_date=until_date
+        )
+
+        print(f"✓ Tweets en rango ({since_date} a {until_date}): {len(tweets)}")
+
+        # Verificar que los tweets están en el rango
+        for tweet in tweets:
+            tweet_time = tweet.get('time_parsed', '')
+            if tweet_time:
+                tweet_date = datetime.fromisoformat(tweet_time.replace('Z', '+00:00'))
+                self.assertGreaterEqual(tweet_date, two_days_ago.replace(tzinfo=tweet_date.tzinfo))
+
+        print("✓ Filtro de fechas funciona correctamente")
+
 
 if __name__ == '__main__':
     # Ejecutar con verbosidad
