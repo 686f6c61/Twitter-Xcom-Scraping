@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
 Script para descargar toda la conversación en torno a un hashtag usando Twitter API
+
+Versión: 0.2
+Autor: @hex686f6c61
+GitHub: https://github.com/686f6c61/Twitter-Xcom-Scraping
+Twitter/X: https://x.com/hex686f6c61
+
+Changelog v0.2:
+- Añadido filtro de rango de fechas (desde-hasta)
 """
 
 import os
@@ -42,7 +50,7 @@ class TwitterHashtagScraper:
         print(f"API Key: {self.api_key[:10]}...{self.api_key[-4:]}")
         print()
 
-    def search_tweets(self, query, mode='latest', max_tweets=None, is_hashtag=True, until_date=None):
+    def search_tweets(self, query, mode='latest', max_tweets=None, is_hashtag=True, until_date=None, since_date=None):
         """
         Busca tweets por hashtag o texto
 
@@ -51,7 +59,8 @@ class TwitterHashtagScraper:
             mode: Modo de búsqueda ('top', 'latest', 'photos', 'videos')
             max_tweets: Número máximo de tweets a descargar (None = todos disponibles)
             is_hashtag: Si True, agrega # si no lo tiene. Si False, busca como texto
-            until_date: Fecha límite para detener la búsqueda (formato: YYYY-MM-DD)
+            until_date: Fecha límite superior (más reciente) - formato: YYYY-MM-DD
+            since_date: Fecha límite inferior (más antigua) - formato: YYYY-MM-DD
 
         Returns:
             Lista de tweets
@@ -69,16 +78,24 @@ class TwitterHashtagScraper:
         oldest_date = None
         newest_date = None
 
-        # Convertir until_date a timestamp si está presente
+        # Convertir fechas a timestamp si están presentes
         until_timestamp = None
+        since_timestamp = None
         if until_date:
             from datetime import datetime as dt
             until_timestamp = int(dt.strptime(until_date, '%Y-%m-%d').timestamp())
+        if since_date:
+            from datetime import datetime as dt
+            since_timestamp = int(dt.strptime(since_date, '%Y-%m-%d').timestamp())
 
         print(f"Buscando tweets para: {search_query}")
         print(f"Modo: {mode}")
-        if until_date:
+        if since_date and until_date:
+            print(f"Rango de fechas: desde {since_date} hasta {until_date}")
+        elif until_date:
             print(f"Hasta fecha: {until_date}")
+        elif since_date:
+            print(f"Desde fecha: {since_date}")
         print("-" * 50)
 
         while True:
@@ -113,7 +130,10 @@ class TwitterHashtagScraper:
                     print("No se encontraron más tweets.")
                     break
 
-                # Verificar fechas de los tweets
+                # Filtrar tweets por rango de fechas si está configurado
+                filtered_tweets = []
+                stop_pagination = False
+
                 page_count += 1
                 for tweet in tweets:
                     tweet_date = tweet.get('time_parsed', '')
@@ -125,20 +145,33 @@ class TwitterHashtagScraper:
                     if not newest_date or (tweet_date and tweet_date > newest_date):
                         newest_date = tweet_date
 
-                    # Verificar si llegamos a la fecha límite
-                    if until_timestamp and tweet_timestamp < until_timestamp:
-                        print(f"\nAlcanzada la fecha límite: {until_date}")
-                        # Filtrar tweets que están antes de la fecha límite
-                        tweets = [t for t in tweets if t.get('timestamp', 0) >= until_timestamp]
-                        all_tweets.extend(tweets)
-                        tweet_count = len(all_tweets)
-                        print(f"Total descargado: {tweet_count} tweets")
-                        return all_tweets
+                    # Verificar si el tweet está dentro del rango de fechas
+                    if since_timestamp and tweet_timestamp < since_timestamp:
+                        # Ya pasamos la fecha inferior, detener paginación
+                        print(f"\nAlcanzada la fecha límite inferior: {since_date}")
+                        stop_pagination = True
+                        break
 
-                all_tweets.extend(tweets)
-                tweet_count += len(tweets)
+                    # Filtrar según el rango
+                    if until_timestamp and tweet_timestamp > until_timestamp:
+                        # Tweet más reciente que el límite superior, saltarlo
+                        continue
 
-                print(f"Página {page_count}: {len(tweets)} tweets | Total: {tweet_count} tweets | Más antiguo: {oldest_date[:10] if oldest_date else 'N/A'}")
+                    if since_timestamp and tweet_timestamp < since_timestamp:
+                        # Tweet más antiguo que el límite inferior, saltarlo
+                        continue
+
+                    # Tweet dentro del rango (o sin filtros)
+                    filtered_tweets.append(tweet)
+
+                all_tweets.extend(filtered_tweets)
+                tweet_count = len(all_tweets)
+
+                if stop_pagination:
+                    print(f"Total descargado: {tweet_count} tweets en el rango especificado")
+                    break
+
+                print(f"Página {page_count}: {len(filtered_tweets)} tweets añadidos de {len(tweets)} | Total: {tweet_count} tweets | Más antiguo: {oldest_date[:10] if oldest_date else 'N/A'}")
 
                 # Verificar si llegamos al máximo
                 if max_tweets and tweet_count >= max_tweets:
@@ -221,7 +254,7 @@ class TwitterHashtagScraper:
 
         return all_replies
 
-    def download_full_conversation(self, query, mode='latest', max_tweets=None, include_replies=True, is_hashtag=True, until_date=None):
+    def download_full_conversation(self, query, mode='latest', max_tweets=None, include_replies=True, is_hashtag=True, until_date=None, since_date=None):
         """
         Descarga la conversación completa incluyendo respuestas
 
@@ -231,13 +264,14 @@ class TwitterHashtagScraper:
             max_tweets: Número máximo de tweets principales (None = todos disponibles)
             include_replies: Si incluir las respuestas de cada tweet
             is_hashtag: Si True, trata como hashtag. Si False, como texto libre
-            until_date: Fecha límite para la búsqueda (YYYY-MM-DD)
+            until_date: Fecha límite superior (más reciente) - formato: YYYY-MM-DD
+            since_date: Fecha límite inferior (más antigua) - formato: YYYY-MM-DD
 
         Returns:
             Diccionario con tweets y respuestas
         """
         # Buscar tweets principales
-        main_tweets = self.search_tweets(query, mode, max_tweets, is_hashtag, until_date)
+        main_tweets = self.search_tweets(query, mode, max_tweets, is_hashtag, until_date, since_date)
 
         conversation = {
             'query': query,
@@ -465,17 +499,36 @@ def main():
     max_tweets_input = input("¿Cuántos tweets descargar? (Enter = todos disponibles): ").strip()
     max_tweets = int(max_tweets_input) if max_tweets_input else None
 
-    until_date_input = input("¿Buscar hasta qué fecha? (DD-MM-YYYY, Enter = sin límite): ").strip()
+    # Pregunta de rango de fechas
+    date_range_input = input("¿Filtrar por rango de fechas? (s/n, default=n): ").strip().lower()
 
-    # Convertir DD-MM-YYYY a YYYY-MM-DD
     until_date = None
-    if until_date_input:
-        try:
-            day, month, year = until_date_input.split('-')
-            until_date = f"{year}-{month}-{day}"
-        except:
-            print("⚠️  Formato de fecha incorrecto, se ignorará el límite de fecha")
-            until_date = None
+    since_date = None
+
+    if date_range_input == 's':
+        print("\n   Configura el rango de fechas (formato DD-MM-YYYY)")
+        print("   Puedes especificar solo una fecha o ambas:")
+
+        since_date_input = input("   - Desde (fecha más antigua): ").strip()
+        until_date_input = input("   - Hasta (fecha más reciente): ").strip()
+
+        # Convertir since_date de DD-MM-YYYY a YYYY-MM-DD
+        if since_date_input:
+            try:
+                day, month, year = since_date_input.split('-')
+                since_date = f"{year}-{month}-{day}"
+            except:
+                print("   ⚠️  Formato de fecha 'desde' incorrecto, se ignorará")
+                since_date = None
+
+        # Convertir until_date de DD-MM-YYYY a YYYY-MM-DD
+        if until_date_input:
+            try:
+                day, month, year = until_date_input.split('-')
+                until_date = f"{year}-{month}-{day}"
+            except:
+                print("   ⚠️  Formato de fecha 'hasta' incorrecto, se ignorará")
+                until_date = None
 
     include_replies_input = input("\n¿Incluir respuestas? (s/n, default=s): ").strip().lower()
     include_replies = include_replies_input != 'n'
@@ -562,7 +615,8 @@ def main():
                 max_tweets=max_tweets,
                 include_replies=include_replies,
                 is_hashtag=is_hashtag,
-                until_date=until_date
+                until_date=until_date,
+                since_date=since_date
             )
 
             # Aplicar filtros si están configurados
@@ -646,7 +700,8 @@ def main():
                 max_tweets=max_tweets,
                 include_replies=include_replies,
                 is_hashtag=is_hashtag,
-                until_date=until_date
+                until_date=until_date,
+                since_date=since_date
             )
 
             # Aplicar filtros si están configurados
@@ -697,7 +752,8 @@ def main():
             max_tweets=max_tweets,
             include_replies=include_replies,
             is_hashtag=is_hashtag,
-            until_date=until_date
+            until_date=until_date,
+            since_date=since_date
         )
 
         # Aplicar filtros si están configurados
